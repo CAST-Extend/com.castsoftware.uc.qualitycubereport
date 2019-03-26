@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
     <id>com.castsoftware.uc.qualitycubereport</id>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
     <title>Quality cube report</title>
     <authors>User Community</authors>
     <owners>CAST</owners>

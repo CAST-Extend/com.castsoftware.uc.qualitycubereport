@@ -41,6 +41,9 @@ public class QualityCubeReport {
 	// Please also change the version in version.properties file
 	private static final String VERSION = "1.0.2";
 
+	private static final String FILTER_EXTENSION_VERSION_LAST = "LAST";
+	private static final String FILTER_EXTENSION_VERSION_ALL = "ALL";
+	
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 	// command line short and long keys
 
@@ -73,7 +76,7 @@ public class QualityCubeReport {
 	private String AIPVersion = null;
 	
 	// Extension version (last by default)
-	private String extensionVersionFilter = "LAST";
+	private String extensionVersionFilter = FILTER_EXTENSION_VERSION_LAST;
 	
 	private QualityCubeReport() {
 		logger = Logger.getLogger("MainLogger");
@@ -465,9 +468,10 @@ public class QualityCubeReport {
 							}
 						}
 						// we keep only the last version for each extension
-						if (extensionVersionFilter == null || (extensionVersionFilter != null && "LAST".equals(extensionVersionFilter)) ) {
+						if (extensionVersionFilter == null || (extensionVersionFilter != null && FILTER_EXTENSION_VERSION_LAST.equals(extensionVersionFilter)) 
+								|| (extensionVersionFilter != null && "".equals(extensionVersionFilter))) {
 							break;
-						} else ; // ALL
+						} else ; // ALL extension versions will be extracted
 						
 					}
 	

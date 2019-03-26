@@ -17,6 +17,11 @@ SET LOOKUPQRDETAILS=
 ::SET AIPVERSION=-AIPVersion 8.2.5_1598
 SET AIPVERSION=
 
+:: if this LAST option is selected, or the parameter is not set, only the last extension version will extracted
+::SET FILTEREXTENSIONVERSION=-filterExtensionsVersion LAST
+::SET FILTEREXTENSIONVERSION=-filterExtensionsVersion ALL
+
+
 SET JAVA_HOME=C:\Program Files\Java\jre1.8.0_181
 
 For /F "tokens=1* delims==" %%A IN (version.properties) DO (
@@ -28,7 +33,7 @@ For /F "tokens=1* delims==" %%A IN (version.properties) DO (
 ::Check JRE Installation
 IF NOT EXIST "%JAVA_HOME%\bin" GOTO JREPathNotSet
 
-SET CMD="%JAVA_HOME%\bin\java" -jar QualityCubeReport-%VERSION%.jar %LOOKUPEXTENSIONS% %LOOKUPQRDETAILS% %AIPVERSION%
+SET CMD="%JAVA_HOME%\bin\java" -jar QualityCubeReport-%VERSION%.jar %LOOKUPEXTENSIONS% %LOOKUPQRDETAILS% %AIPVERSION% %FILTEREXTENSIONVERSION%
 
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
