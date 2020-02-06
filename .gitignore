@@ -1,4 +1,3 @@
-/CASTQualityCubeReport.log
-/dist/
-/dist_nuget/
-/bin/
+/QualityCubeReport.log
+*.[nN][uU][pP][kK][gG]
+*.[cC][sS][vV]

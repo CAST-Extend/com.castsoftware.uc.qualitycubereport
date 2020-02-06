@@ -2,18 +2,23 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
   <metadata>
     <id>com.castsoftware.uc.qualitycubereport</id>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
     <title>Quality cube report</title>
     <authors>User Community</authors>
     <owners>CAST</owners>
     <projectUrl>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki</projectUrl>
     <iconUrl>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/blob/master/Excel_2010_23622.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>This extension allows to export the quality rules from https://technologies.castsoftware.com Rest API into an Excel report</description>
+    <description>This extension allows to export the quality rules from https://technologies.castsoftware.com Rest API into an CSV report</description>
     <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki</releaseNotes>
     <tags>CASTUserCommunity Quality</tags>
     <dependencies>
       <dependency id="CAIP" version="8.2" />
     </dependencies>
   </metadata>
+	<files>
+	  <file src="**QualityCubeReport**\*.*" exclude="**\*.csv;**\*.log;**\*.gitignore;**\*.xml" target="./"/> 
+	</files> 
+	
+	
 </package>

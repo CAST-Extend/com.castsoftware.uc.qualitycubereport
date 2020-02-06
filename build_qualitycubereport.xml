@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="create_run_jar" name="Create Runnable Jar for Project com.castsoftware.uc.restapi.reports with Jar-in-Jar Loader">
+<project default="build" name="Create Runnable Jar for Project com.castsoftware.uc.restapi.reports with Jar-in-Jar Loader">
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
     
@@ -9,72 +9,19 @@
 	<property name="extension.name" value="com.castsoftware.uc.qualitycubereport" />
 	
 	<!-- Output directory where the package will generate the binary package -->  
-	<!-- on MMR workstation -->
-	<property name="output.dir" value="C:\Temp\MMR\QualityCubeReport_build"/>
+	<!-- property name="output.dir" value="C:\Temp\MMR\QualityCubeReport_build"/ -->
 	
 	<!-- Local eclipse project directory -->  
 	<!-- on MMR workstation -->
-	<property name="project.dir" value="C:\Users\mmr\workspace\${extension.name}.local"/>
+	<property name="project.dir" value="C:\Users\mmr\workspace\${extension.name}2.local"/>
 	
-	<target name="create_run_jar">
-		<delete dir="${output.dir}/${version}" />
-		<mkdir dir="${output.dir}/${version}/QualityCubeReport" />
-        <jar destfile="${output.dir}/${version}/QualityCubeReport/QualityCubeReport-${version}.jar">
-            <manifest>
-                <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
-                <attribute name="Rsrc-Main-Class" value="com.castsoftware.uc.qualitycubereport.QualityCubeReport"/>
-                <attribute name="Class-Path" value="."/>
-                <attribute name="Rsrc-Class-Path" value="./ commons-io-2.5.jar log4j-1.2.17.jar commons-logging-1.2.jar httpclient-4.5.3.jar httpcore-4.4.6.jar jackson-core-2.8.8.jar org.json-2.0.jar dom4j-1.6.1.jar ooxml-schemas-1.0.jar poi-3.17.jar poi-ooxml-3.17.jar xmlbeans-5.1.3.jar commons-collections4-4.1.wso2v1.jar postgresql-8.3-603.jdbc3.jar commons-cli-1.2.jar"/>
-            	<attribute name="Implementation-Version" value="${version}" />
-            </manifest>
-            <zipfileset src="jar-in-jar-loader.zip"/>
-            <fileset dir="${project.dir}/bin"/>
-        	<zipfileset file="version.properties" />
-            <zipfileset dir="${project.dir}\lib" includes="commons-io-2.5.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="log4j-1.2.17.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="commons-logging-1.2.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="httpclient-4.5.3.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="httpcore-4.4.6.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="jackson-core-2.8.8.jar"/>
-            <zipfileset dir="${project.dir}\lib" includes="org.json-2.0.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="dom4j-1.6.1.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="ooxml-schemas-1.0.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="poi-3.17.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="poi-ooxml-3.17.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="xmlbeans-5.1.3.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="commons-collections4-4.1.wso2v1.jar"/>
-        	<zipfileset dir="${project.dir}\lib" includes="postgresql-8.3-603.jdbc3.jar"/>	
-        	<zipfileset dir="${project.dir}\lib" includes="commons-cli-1.2.jar"/>
-        </jar>
-		<copy todir="${output.dir}/${version}/QualityCubeReport">
-	        	<fileset dir="./resources"/>
-	    </copy>	
-        <copy file="./version.properties" tofile="${output.dir}/${version}/QualityCubeReport/version.properties" />
-		
-		<zip destfile="${output.dir}/${version}/QualityCubeReport-${version}.zip">
-				<fileset dir="${output.dir}/${version}" />
-		</zip>
-		<zip destfile="${output.dir}/${version}/QualityCubeReport-${version}-src.zip">
-				<fileset dir="${project.dir}" excludes="dist,dist_nugget" />
-		</zip>
-		<!-- delete dir="${output.dir}/${version}/QualityCubeReport" / -->
-
-		<delete dir="${project.dir}/dist" />
-		<copy todir="${project.dir}/dist">
-	        	<fileset dir="${output.dir}/${version}/QualityCubeReport"/>
-				<fileset file="${project.dir}/plugin.nuspec"/>
-				<fileset file="${project.dir}/LICENSE"/>
-				<fileset file="${project.dir}/README.md"/>
-	    </copy>
-		
+	<target name="build">
 		<!--Nugget command to package the extension -->
 		<exec executable="cmd">
 		    <arg value="/c"/>
 		    <arg value="nugget_package.bat"/>
 			<arg value="${version}"/>
 		</exec>
-		<delete dir="${project.dir}/dist_nuget" />
-		<move file="${project.dir}/${extension.name}.${version}.nupkg" todir="${project.dir}/dist_nuget" />
 
     </target>
 </project>
