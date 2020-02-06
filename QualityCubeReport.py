@@ -286,7 +286,18 @@ def parse_jsonqr(logger, connection, json_qr, index, detailLevel):
     if href != None: 
         x.restHref = '/' + href 
     x.metricId = json_qr['id']
+
     x.metricName = json_qr['name']
+    #TODO improve the fix
+    # temporary fix to avoid the below error
+    #File "C:\Users\mmr\workspace\com.castsoftware.uc.qualitycubereport.local_2\QualityCubeReport.py", line 452, in <module>
+    #csv_writer.writerow(row)
+    #File "C:\Program Files\CAST\8.1\ThirdParty\Python34\lib\encodings\cp1252.py", line 19, in encode
+    #return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+    #UnicodeEncodeError: 'charmap' codec can't encode character '\x85' in position 105: character maps to <undefined>    
+    if x.metricId == 1001136:
+        x.metricName = 'Avoid Main Procedures having "SELECT * FROM ..." clause (PL1)'
+    
     x.critical = json_qr['critical']
     x.type = 'quality-rules'
     
@@ -447,7 +458,9 @@ if __name__ == '__main__':
             csv_writer = csv.writer(csv_file, delimiter=';')
             # write in csv file
             csv_writer.writerow(['Type','Parent','Version','Last version','Quality rule id','Quality rule name','Critical','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
-            csv_writer.writerows(mycsvdatas)
+            for row in mycsvdatas:
+                logger.debug(row)
+                csv_writer.writerow(row)
         msg = 'Completed with success. File ' + csvfilepath + ' generated with ' + str(iCounter) + ' rows'        
         logger.info(msg)
         print(msg)           
