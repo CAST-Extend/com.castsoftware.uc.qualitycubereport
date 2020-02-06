@@ -10,7 +10,7 @@
     <iconUrl>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/blob/master/Excel_2010_23622.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This extension allows to export the quality rules from https://technologies.castsoftware.com Rest API into an CSV report</description>
-    <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki</releaseNotes>
+    <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki#version-110</releaseNotes>
     <tags>CASTUserCommunity Quality</tags>
     <dependencies>
       <dependency id="CAIP" version="8.2" />
