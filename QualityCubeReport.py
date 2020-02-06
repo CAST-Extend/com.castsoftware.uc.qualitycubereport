@@ -442,7 +442,7 @@ if __name__ == '__main__':
             mycsvdatas.append(qci_to_dictitem(logger, data))
         
         # csv file path
-        csvfilepath = 'CAST_QualityRules_' + versionFilter + '_' + get_formatted_dateandtime(currentdate) + '.csv'
+        csvfilepath = 'CAST_QualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
         with open(csvfilepath, mode='w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';')
             # write in csv file
