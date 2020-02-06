@@ -7,7 +7,7 @@
     <authors>User Community</authors>
     <owners>CAST</owners>
     <projectUrl>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki</projectUrl>
-    <iconUrl>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/blob/master/Excel_2010_23622.png</iconUrl>
+    <iconUrl>https://raw.githubusercontent.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/master/export_csv-512.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This extension allows to export the quality rules from https://technologies.castsoftware.com Rest API into an CSV report</description>
     <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.qualitycubereport/wiki#version-110</releaseNotes>
