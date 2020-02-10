@@ -10,6 +10,7 @@ import sys
 import csv
 import traceback
 import datetime
+import os
 
 ########################################################################
 # Class containing all the attributed to be sent to the CSV file
@@ -20,15 +21,19 @@ class QualityCubeItem:
     metricId = None
     metricName = None
     critical = False
+    status = ''
     
     # type possible values = quality-rules / technical-criteria / quality-distributions
     type = None
     
     # parentType possible values = platform / extension
-    parentType = None
-    parentName = None
-    parentVersion = None
-    lastVersion = False
+    parentType = ''
+    parentName = ''
+    parentTitle = ''
+    parentVersion = ''
+    lastVersion = None
+    maxWeight = ''
+    maxWeightRecomputed = -1 
     
     # Rest URI
     restHref = ''
@@ -49,19 +54,26 @@ class QualityCubeItem:
     listParameters = []
 
     # list of standard
-    threshold1 = -1
-    threshold2 = -1
-    threshold3 = -1
-    threshold4 = -1
+    threshold1 = 0
+    threshold2 = 0
+    threshold3 = 0
+    threshold4 = 0
     
-    #TODO
-    technicalCriterionId = None
-    technicalCriterionName = None
-    weight = None
-    businessCriterionId  = None
-    businessCriterionName = None
-    weightTechnicalCriterion = None    
-    
+    # rule documentation
+    alternativeName = ''
+    associatedValueName = ''
+    description = ''
+    output = ''
+    rationale = ''       
+    remediation = ''
+    total = ''      
+
+
+    # CRC on quality rules / metamodel changes 
+    rulesCRC = ''
+    metaModelCRC = ''
+
+    #####################################################################""
     
     
     def __init__(self):
@@ -153,10 +165,10 @@ def execute_request(logger, connection, request):
 
 
 def log_qci(logger, qci):
-    #msg = "Type;Parent;Version;Last version;Quality rule id;Quality rule name;Critical;Technologies;Href;Standards;Business criteria contribution;Technical criteria contribution;Rest Href"
+    #msg = "Type;Parent name;Parent title;Version;Last version;Quality rule id;Quality rule name;Critical;Technologies;Href;Standards;Business criteria contribution;Technical criteria contribution;Rest Href"
     
     #Href
-    msg = qci.parentType + ";" + qci.parentName + ";" + qci.parentVersion + ";" + str(qci.lastVersion) + ";" + str(qci.metricId) + ";" + qci.metricName + ";" + str(qci.critical) + ";"
+    msg = qci.parentType + ";" + qci.parentName + ";"+ qci.parentTitle + ";" + qci.parentVersion + ";" + str(qci.lastVersion) + ";" + str(qci.metricId) + ";" + qci.metricName + ";" + str(qci.critical) + ";" + ";" + str(qci.maxWeight) + ";"
 
     # List of technologies
     listtec = ''
@@ -199,8 +211,7 @@ def log_qci(logger, qci):
 ########################################################################
 # Format to dict for the ouput into CSV line
     
-    
-def qci_to_dictitem(logger, qci):
+def qci_to_dictitem(logger, qci, detailLevel):
 
     # List of technologies
     listtec = ''
@@ -230,7 +241,18 @@ def qci_to_dictitem(logger, qci):
         listtc += tc + '/'
     if listtc != '': listtc = listtc[:-1]
 
-    return [qci.parentType, qci.parentName,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical), listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
+    # List of parameters
+    listparam = ''
+    for param in qci.listParameters:
+        listparam += param + '/'
+    if listparam != '': listparam = listparam[:-1]
+
+    if detailLevel == 'Full': 
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.rulesCRC), str(qci.metaModelCRC), str(qci.metricId), qci.metricName,  str(qci.critical), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, str(qci.threshold1), str(qci.threshold2), str(qci.threshold3),str(qci.threshold4),listparam,qci.get_full_restHref(),qci.alternativeName,        qci.description , qci.rationale,     qci.remediation,qci.associatedValueName,qci.output,qci.total]
+    elif detailLevel == 'Intermediate':        
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
+    elif detailLevel == 'Simple':
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical), qci.status, listtec, href]
 
 ########################################################################
 def get_platform_versions(logger, connection):
@@ -258,6 +280,11 @@ def get_extensions_versions_qualityrules(logger, connection, extension, version)
     return execute_request(logger, connection, request)
 
 ########################################################################
+def get_extension_details(logger, connection, extension_id):
+    request = "/AIP/extensions/" + extension_id
+    return execute_request(logger, connection, request)
+
+########################################################################
 # intialize the command line arguments
 
 def init_parse_argument():
@@ -269,6 +296,29 @@ def init_parse_argument():
     requiredNamed.add_argument('-log', required=True, dest='log', help='log file')
     
     return parser
+
+########################################################################
+# dirty workaround to remove the unicode characters before sending them to the CSV file
+# and avoid the below error
+#File "C:\Users\mmr\workspace\com.castsoftware.uc.qualitycubereport.local_2\QualityCubeReport.py", line 452, in <module>
+#csv_writer.writerow(row)
+#File "C:\Program Files\CAST\8.1\ThirdParty\Python34\lib\encodings\cp1252.py", line 19, in encode
+#return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+#UnicodeEncodeError: 'charmap' codec can't encode character '\x85' in position 105: character maps to <undefined>    
+
+def remove_unicode_characters(astr):
+    mystr = astr
+    mystr = mystr.replace('\x85', '')
+    mystr = mystr.replace('\x95', '')
+    mystr = mystr.replace('\ufb01', '')
+    mystr = mystr.replace('\ufb02', '')
+    mystr = mystr.replace('\x92', '')
+    mystr = mystr.replace('\x97','')
+    mystr = mystr.replace('\x93','')
+    mystr = mystr.replace('\x94','')
+    mystr = mystr.replace('\u200b','')
+    mystr = mystr.replace('\x96','')
+    return mystr
 
 ########################################################################
 # parse the quality rule json
@@ -288,17 +338,17 @@ def parse_jsonqr(logger, connection, json_qr, index, detailLevel):
     x.metricId = json_qr['id']
 
     x.metricName = json_qr['name']
-    #TODO improve the fix
-    # temporary fix to avoid the below error
-    #File "C:\Users\mmr\workspace\com.castsoftware.uc.qualitycubereport.local_2\QualityCubeReport.py", line 452, in <module>
-    #csv_writer.writerow(row)
-    #File "C:\Program Files\CAST\8.1\ThirdParty\Python34\lib\encodings\cp1252.py", line 19, in encode
-    #return codecs.charmap_encode(input,self.errors,encoding_table)[0]
-    #UnicodeEncodeError: 'charmap' codec can't encode character '\x85' in position 105: character maps to <undefined>    
+
+    # temporary dirty workaround to avoid the below error
+    # QualityCubeReport.py", line 452, in <module>
+    # UnicodeEncodeError: 'charmap' codec can't encode character '\x85' in position 105: character maps to <undefined>    
     if x.metricId == 1001136:
-        x.metricName = 'Avoid Main Procedures having "SELECT * FROM ..." clause (PL1)'
+        x.metricName = remove_unicode_characters(json_qr['name'])
+        #x.metricName = 'Avoid Main Procedures having "SELECT * FROM ..." clause (PL1)'
     
     x.critical = json_qr['critical']
+    x.status = json_qr['status']
+
     x.type = 'quality-rules'
     
     # Last version for the platform or extension
@@ -309,26 +359,81 @@ def parse_jsonqr(logger, connection, json_qr, index, detailLevel):
     for tech in json_qr['technologyNames']:
         x.add_technology(tech)
     
-    # thresholds
-    #x.threshold1 = json_qr['thresholds'][0]
-    
-    
-    # we look at the quality rules details only if parameter lookupQualityRuleDetails has true value, because it's very time consuming
-    # we do that only for the last version, but we don't have history for those data 
-    if detailLevel != 'Simple' and x.lastVersion and x.restHref != None and x.restHref != '':
+    # we look at the quality rules details only if we detail Level is not Simple but Intermediate or Full, because it's very time consuming
+    # we do that only for the last version, because we don't have history for those data, it's available only in the last version 
+    if (detailLevel == 'Intermediate' or detailLevel == 'Full') and x.lastVersion and x.restHref != None and x.restHref != '':
         json_qrdetail = execute_request(logger, connection,  x.restHref)
+        try:
+            x.maxWeight = str(json_qrdetail['maxWeight'])
+        except KeyError:
+            x.maxWeight = ''
+        
         for bc in json_qrdetail['businessCriteria']:
             x.add_businesscriterion(bc['name'])
         for tc in json_qrdetail['technicalCriteria']:
-            x.add_technicalcriterion(tc['name'])
+            x.add_technicalcriterion(tc['name']+'#'+str(tc['critical'])+'#'+str(tc['weight']))
+            if tc['weight'] > x.maxWeightRecomputed: 
+                x.maxWeightRecomputed = tc['weight']
+                # Fix in the rest API data, maxWeight is not always filled where it should
+                if x.maxWeight == '': x.maxWeight = x.maxWeightRecomputed
+            
         for qs in json_qrdetail['qualityStandards']:
             x.add_qualitystandard(qs['standard'] + "/" + qs['id'])       
-        for param in json_qrdetail['parameters']:
-            x.add_parameter(param['name'])
-             
     
+        if detailLevel == 'Full':
+            # parameters
+            for param in json_qrdetail['parameters']:
+                x.add_parameter(param['name'])          
+    
+            # thresholds
+            ithres = 0
+            for trsh in json_qrdetail['thresholds']:
+                ithres += 1
+                if ithres == 1:
+                    x.threshold1 = trsh
+                elif ithres == 2:
+                    x.threshold2 = trsh
+                elif ithres == 3:
+                    x.threshold3 = trsh
+                elif ithres == 4:
+                    x.threshold4 = trsh       
+    
+            # rule documentation
+            try:
+                x.alternativeName = json_qrdetail['alternativeName']
+            except KeyError:
+                x.alternativeName = ''
+            try:
+                x.associatedValueName = json_qrdetail['associatedValueName']
+            except KeyError:
+                x.associatedValueName = ''
+            try:
+                x.description = remove_unicode_characters(json_qrdetail['description'])
+            except UnicodeEncodeError:
+                x.description = 'UnicodeEncodeError'
+            except KeyError:
+                x.description = ''
+            try:
+                x.output = json_qrdetail['output']
+            except KeyError:
+                x.output = ''
+            try:            
+                x.rationale = remove_unicode_characters(json_qrdetail['rationale'])
+            except UnicodeEncodeError:
+                x.rationale = 'UnicodeEncodeError'
+            except KeyError:
+                x.rationale = ''
+            try:            
+                x.remediation = remove_unicode_characters(json_qrdetail['remediation'])
+            except UnicodeEncodeError:
+                x.remediation = 'UnicodeEncodeError'
+            except KeyError:
+                x.remediation = ''
+            try:            
+                x.total = json_qrdetail['total']
+            except KeyError:
+                x.total = ''
     return x
-
 
 ######################################################################################################################
 # Format a timestamp date into a string
@@ -400,7 +505,9 @@ if __name__ == '__main__':
         iversion = 0
         for version in platform_versions:
             iversion += 1 
-            # breaking if we keep only the LAST
+            # mise au point
+            #break
+            # breaking in the second iteration if we keep only the LAST version
             if iversion > 1 and versionFilter == 'LAST':
                 break
 
@@ -414,6 +521,7 @@ if __name__ == '__main__':
                     qci = parse_jsonqr(logger, connection, json_qr, iversion, detailLevel)
                     qci.parentType = 'Platform'
                     qci.parentName = 'Platform'
+                    qci.parentTitle = 'Platform'
                     qci.parentVersion = version['name']
                     listQualityRules.append(qci)
                     #log_qci(logger,qci)
@@ -421,49 +529,103 @@ if __name__ == '__main__':
         #####################################################    
         # retrieve extensions versions & quality rules
         extensions = get_extensions(logger, connection)
+        iext = 0
+        #for extension in extensions:
+        #    print(extension['name'])
         for extension in extensions:
-            versions = get_extensions_versions(logger, connection, extension['name'])
-            iversion = 0
-            if versions == None: 
-                continue
-            for version in versions:
-                iversion+=1
-                # breaking if we keep only the LAST                
-                if iversion > 1 and versionFilter == 'LAST':
-                    break
+            iext += 1
+            # pour mise au point
+            #break
+            #if iext > 1:
+            #    break
+            extensionDetails = get_extension_details(logger, connection, extension['name'])
+            if extensionDetails == None:
+                msg = 'Extension '  + extension['name'] + ' not found, skipping.'
+                logger.warning(msg)
+                print(msg)
+            else:
+                # mise au point     
+                #if extension['name'] != 'com.castsoftware.egl':
+                #    continue 
+                hasQualityModel = extensionDetails['qualityModel']
+                hasTransactionsConfiguration = extensionDetails['transactionsConfiguration']
                 
-                msg = 'Extension ' + extension['name'] + ' ' + version['name'] + ': processing'
-                logger.info(msg)
-                print(msg)                
-                json_qrs = get_extensions_versions_qualityrules(logger, connection, extension['name'], version['name'])
-                if json_qrs != None:
-                    for json_qr in json_qrs: 
-                        qci = parse_jsonqr(logger, connection, json_qr, iversion, detailLevel)
-                        qci.parentType = 'Product extension'
-                        qci.parentName = extension['name']
-                        qci.parentVersion = version['name']
-                        listQualityRules.append(qci)
-                        #log_qci(logger,qci)
+                versions = get_extensions_versions(logger, connection, extension['name'])
+                iversion = 0
+                if versions == None: 
+                    continue
+                for version in versions:
+                    iversion+=1
+                    # breaking if we keep only the LAST                
+                    if iversion > 1 and versionFilter == 'LAST':
+                        break
+                    
+                    msg = 'Extension ' + extension['name'] + ' ' + version['name'] + '(QM: ' + str(hasQualityModel) + ' TR: '+ str(hasTransactionsConfiguration) +  ') : processing. '
+                    if not hasQualityModel:
+                        msg += '  No quality model, skipping'
+                    logger.info(msg)
+                    print(msg)
+                    
+                    if hasQualityModel:
+                        json_qrs = get_extensions_versions_qualityrules(logger, connection, extension['name'], version['name'])
+                        if json_qrs != None:
+                            for json_qr in json_qrs: 
+                                qci = parse_jsonqr(logger, connection, json_qr, iversion, detailLevel)
+                                qci.parentType = 'Product extension'
+                                qci.parentName = extension['name']
+                                qci.parentTitle = extensionDetails['title']
+                                qci.parentVersion = version['name']
+                                qci.rulesCRC = version['rulesCRC']
+                                qci.metaModelCRC = version['metaModelCRC']
+                                listQualityRules.append(qci)
+
+
+                                #### mise au point
+                                '''
+                                currentdate = datetime.datetime.today()
+                                # csv file path
+                                mycsvdatas = []
+                                for data in listQualityRules:
+                                    mycsvdatas.append(qci_to_dictitem(logger, data, detailLevel))
+                                csvfilepath = 'CAST_TempQualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
+                                with open(csvfilepath, mode='w', newline='') as csv_file:
+                                    csv_writer = csv.writer(csv_file, delimiter=';')
+                                    csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+                                    for row in mycsvdatas:
+                                        logger.debug(str(row))
+                                        csv_writer.writerow(row)
+                                '''
+                                #### fin mise au point
         
         currentdate = datetime.datetime.today()
         iCounter = 0
         mycsvdatas = []
         for data in listQualityRules:
             iCounter+=1
-            mycsvdatas.append(qci_to_dictitem(logger, data))
+            mycsvdatas.append(qci_to_dictitem(logger, data, detailLevel))
         
         # csv file path
         csvfilepath = 'CAST_QualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
         with open(csvfilepath, mode='w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=';')
             # write in csv file
-            csv_writer.writerow(['Type','Parent','Version','Last version','Quality rule id','Quality rule name','Critical','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
+            if detailLevel == 'Full':
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+            elif detailLevel == 'Intermediate':
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
+            elif detailLevel == 'Simple':
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Status','Technologies','Href'])
+
             for row in mycsvdatas:
-                logger.debug(row)
+                logger.debug(str(row))
                 csv_writer.writerow(row)
         msg = 'Completed with success. File ' + csvfilepath + ' generated with ' + str(iCounter) + ' rows'        
         logger.info(msg)
-        print(msg)           
+        print(msg)  
+        
+        
+        #os.system("start "+csvfilepath)
+         
            
     except: # catch *all* exceptions
         tb = traceback.format_exc()
