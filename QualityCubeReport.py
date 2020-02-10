@@ -617,7 +617,8 @@ if __name__ == '__main__':
                 csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Status','Technologies','Href'])
 
             for row in mycsvdatas:
-                logger.debug(str(row))
+                # mise au point
+                #logger.debug(str(row))
                 csv_writer.writerow(row)
         msg = 'Completed with success. File ' + csvfilepath + ' generated with ' + str(iCounter) + ' rows'        
         logger.info(msg)
