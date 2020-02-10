@@ -72,7 +72,6 @@ N/A
 <a name="limitations"></a>
 # Limitations and potential enhancements
 - Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API)
-- Quality rules weight & critical contribution to technical criteria are not yet extracted 
 <a name="rn"></a>
 # Release Notes
 ## Version 1.1.1

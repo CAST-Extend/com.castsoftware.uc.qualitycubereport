@@ -17,7 +17,7 @@
     </dependencies>
   </metadata>
 	<files>
-	  <file src="**QualityCubeReport**\*.*" exclude="**\*.csv;**\*.log;**\*.gitignore;**\*.xml" target="./"/> 
+	  <file src="**QualityCubeReport**\*.*" exclude="**\*.csv;**\*.log;**\*.gitignore;**\*.xml;**githubwiki**\*.txt" target="./"/> 
 	</files> 
 	
 	
