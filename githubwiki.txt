@@ -1,0 +1,90 @@
+Welcome to the com.castsoftware.uc.qualitycubereport wiki!
+>Warning: The Extension described in this document is delivered as-is. This Extension is made available by CAST User Community and governed by Open Source License. Please consider all necessary steps to validate and to test the Extension in your environment before using it in production.        
+
+The extension is published under GNU LGPL v3 open source license
+
+# Table of content
+- [Introduction](#introduction)
+- [In what situation should you install this extension?](#situation)
+- [CAST AIP versions compatibility](#aipcompatibility)
+- [Supported DBMS servers](#supporteddbms)
+- [Configuration instructions](#configuration)
+- [Operation instructions](#Operation)
+   - [Source preparation and analysis configuration instructions](#preparation)
+   - [Analysis processing](#analysis)
+   - [Checks to be performed upon analysis](#checks)
+- [What results can you expect?](#expect)
+   - [List of custom objects](#objects)
+   - [List of links between custom objects](#links)
+   - [Sample graphical view in Enlighten](#graphical)
+   - [List of quality rules](#rules)
+- [Known issues](#KnownIssues)
+- [Limitations and potential enhancements](#limitations)
+- [Release Notes](#rn)
+
+<a name="introduction"></a>
+# Introduction 
+This extension allows to export the quality rules from https://technologies.castsoftware.com Rest API into an CSV report
+
+<a name="situation"></a>
+# In what situation should you install this extension?
+When you want to generate an CSV report containing the list of quality rules for the CAST AIP plateform or product extensions quality rules
+
+<a name="aipcompatibility"></a>
+# CAST AIP versions compatibility
+
+This extension is compatible with all AIP versions 8.2.x and 8.3.x  
+<a name="supporteddbms"></a>
+# Supported DBMS servers
+N/A
+
+<a name="configuration"></a>
+# Configuration instructions
+
+Once registered, you need to configure the batch file before running the extraction process.
+
+<a name="operation"></a>
+# Operation instructions
+Requires a Python runtime 3.4
+Run the batch file corresponding to the option you want (last version or all versions, level of details expected : Simple, Intermediate or Full)
+
+<a name="expect"></a>
+# What results can you expect?
+1 CSV file containing the list of quality rules for CAST AIP plateform selected   
++ the list of quality rules for all extensions  
+Open the CSV file generated in the current folder
+
+Data extracted : 
+- Platform/Extension : name, title, version
+- Quality rule : id, name, critical, maxWeight, HTTP link to technologies.castsoftware.com (portal or Rest API), status, technlogies, business criteria, technical criteria, thresholds, parameters & documentation (rationale, remediation...) 
+
+<a name="links"></a>
+## Links
+N/A
+<a name="rules"></a>
+## List of quality rules
+N/A
+
+<a name="knownIssues"></a>
+# Known issues
+- none
+
+<a name="limitations"></a>
+# Limitations and potential enhancements
+- Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API)
+- Quality rules weight & critical contribution to technical criteria are not yet extracted 
+<a name="rn"></a>
+# Release Notes
+## Version 1.1.1
+Added the extension title
+Added the quality rule maxWeight and status in the Intermediate detailLevel 
+Added a Full detailLevel with more information, including the extension Rules CRC, extension Metamodel CRC & quality rule parameter names, documentation, rationale, remediation, total, associated value name, thresholds values and parameter names
+Add also in the Full detailLevel the technical criterion contribution weight and critical contribution
+Fill the maxWeight in some cases when it was empty
+## Version 1.1.0
+Extraction of the business criteria and technical criteria, for the latest version only
+Extension now implemented in python
+## Version 1.0.3
+* Added for each quality rule a URL pointing to the rule documentation, example : https://technologies.castsoftware.com/rules?s=554|qualityrules|554 
+## Version 1.0.2
+* Initial version published
