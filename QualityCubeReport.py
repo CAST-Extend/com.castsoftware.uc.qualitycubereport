@@ -378,7 +378,7 @@ def parse_jsonqr(logger, connection, json_qr, index, detailLevel):
                 if x.maxWeight == '': x.maxWeight = x.maxWeightRecomputed
             
         for qs in json_qrdetail['qualityStandards']:
-            x.add_qualitystandard(qs['standard'] + "/" + qs['id'])       
+            x.add_qualitystandard(qs['standard'] + ":" + qs['id'])       
     
         if detailLevel == 'Full':
             # parameters
@@ -476,7 +476,7 @@ if __name__ == '__main__':
     if versionFilter != 'LAST' and versionFilter != 'ALL':
         versionFilter = 'LAST'
     detailLevel = 'Intermediate'
-    if args.detailLevel != None and (args.detailLevel == 'Simple' or args.detailLevel == 'Full'):
+    if args.detailLevel != None and (args.detailLevel == 'Simple' or args.detailLevel == 'Intermediate' or args.detailLevel == 'Full'):
         detailLevel = args.detailLevel
 
     # setup logging

@@ -74,6 +74,8 @@ N/A
 - Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API)  
 <a name="rn"></a>
 # Release Notes
+## Version 1.1.2
+Change the quality standards separator for better lisibility  
 ## Version 1.1.1
 Added the extension title  
 Added the quality rule maxWeight and status in the Intermediate detailLevel   
