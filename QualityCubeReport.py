@@ -11,6 +11,7 @@ import csv
 import traceback
 import datetime
 import os
+import copy
 
 ########################################################################
 # Class containing all the attributed to be sent to the CSV file
@@ -185,7 +186,7 @@ def log_qci(logger, qci):
     listqs = ''
     for qs in qci.listQualityStandards:
         listqs += qs + '/'
-    if listqs != '': listqs = listqs[:-1]        
+    if listqs != '': listqs = listqs[:-1]
     msg += listqs + ';' 
  
     
@@ -226,6 +227,8 @@ def qci_to_dictitem(logger, qci, detailLevel):
     listqs = ''
     for qs in qci.listQualityStandards:
         listqs += qs + '/'
+        print(str(qci.metricId) + ";" + qci.metricName + ";" +  qs)   
+
     if listqs != '': listqs = listqs[:-1]        
  
     
@@ -323,7 +326,7 @@ def remove_unicode_characters(astr):
 ########################################################################
 # parse the quality rule json
 
-def parse_jsonqr(logger, connection, json_qr, index, detailLevel):
+def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel):
     x = QualityCubeItem()
     x.listBusinessCriteria = []
     x.listParameters = []
@@ -467,6 +470,8 @@ if __name__ == '__main__':
 
     global logger
 
+    loadNmax = False
+
     parser = init_parse_argument()
     args = parser.parse_args()
     log = args.log
@@ -495,7 +500,8 @@ if __name__ == '__main__':
     logger.info('********************************************')
 
     try:
-        listQualityRules = []
+        listQualityRulesForComponentVersion = []
+        dictQualityRules = {}
 
         # initialize connection
         connection = get_connection(logger, 'technologies.castsoftware.com', 'https')    
@@ -512,18 +518,33 @@ if __name__ == '__main__':
                 break
 
             msg = 'Platform version ' + version['name'] + ': processing'
-            logger.info(msg)
+            '''logger.info(msg)
             print(msg)
+            '''
             json_qrs = get_platform_version_qualityrules(logger, connection, version['name'])
             if json_qrs != None:
+                icount = 0
                 for json_qr in json_qrs: 
+                    icount+=1
+                    if loadNmax != None and loadNmax and icount > 30:
+                        break 
                     qci = None
-                    qci = parse_jsonqr(logger, connection, json_qr, iversion, detailLevel)
+                    href = None
+                    try: href = '/' + json_qr['href'] 
+                    except: None
+                    if href == None or dictQualityRules.get(href) == None:
+                        # load the data from the rest API, the first time
+                        qci = parse_load_jsonqr(logger, connection, json_qr, iversion, detailLevel)
+                        # append the dict
+                        dictQualityRules[qci.restHref] = qci
+                    else:
+                        # reuse what have been already loaded
+                        qci = copy.deepcopy(dictQualityRules.get(href))
                     qci.parentType = 'Platform'
                     qci.parentName = 'Platform'
                     qci.parentTitle = 'Platform'
                     qci.parentVersion = version['name']
-                    listQualityRules.append(qci)
+                    listQualityRulesForComponentVersion.append(qci)
                     #log_qci(logger,qci)
         
         #####################################################    
@@ -532,75 +553,88 @@ if __name__ == '__main__':
         iext = 0
         #for extension in extensions:
         #    print(extension['name'])
-        for extension in extensions:
-            iext += 1
-            # pour mise au point
-            #break
-            #if iext > 1:
-            #    break
-            extensionDetails = get_extension_details(logger, connection, extension['name'])
-            if extensionDetails == None:
-                msg = 'Extension '  + extension['name'] + ' not found, skipping.'
-                logger.warning(msg)
-                print(msg)
-            else:
-                # mise au point     
-                #if extension['name'] != 'com.castsoftware.egl':
-                #    continue 
-                hasQualityModel = extensionDetails['qualityModel']
-                hasTransactionsConfiguration = extensionDetails['transactionsConfiguration']
-                
-                versions = get_extensions_versions(logger, connection, extension['name'])
-                iversion = 0
-                if versions == None: 
-                    continue
-                for version in versions:
-                    iversion+=1
-                    # breaking if we keep only the LAST                
-                    if iversion > 1 and versionFilter == 'LAST':
-                        break
-                    
-                    msg = 'Extension ' + extension['name'] + ' ' + version['name'] + '(QM: ' + str(hasQualityModel) + ' TR: '+ str(hasTransactionsConfiguration) +  ') : processing. '
-                    if not hasQualityModel:
-                        msg += '  No quality model, skipping'
-                    logger.info(msg)
+        if extensions != None:
+            for extension in extensions:
+                iext += 1
+                # pour mise au point
+                #break
+                #if iext > 1:
+                #    break
+                extensionDetails = get_extension_details(logger, connection, extension['name'])
+                if extensionDetails == None:
+                    msg = 'Extension '  + extension['name'] + ' not found, skipping.'
+                    '''logger.warning(msg)
                     print(msg)
+                    '''
+                else:
+                    # mise au point     
+                    #if extension['name'] != 'com.castsoftware.egl':
+                    #    continue 
+                    hasQualityModel = extensionDetails['qualityModel']
+                    hasTransactionsConfiguration = extensionDetails['transactionsConfiguration']
                     
-                    if hasQualityModel:
-                        json_qrs = get_extensions_versions_qualityrules(logger, connection, extension['name'], version['name'])
-                        if json_qrs != None:
-                            for json_qr in json_qrs: 
-                                qci = parse_jsonqr(logger, connection, json_qr, iversion, detailLevel)
-                                qci.parentType = 'Product extension'
-                                qci.parentName = extension['name']
-                                qci.parentTitle = extensionDetails['title']
-                                qci.parentVersion = version['name']
-                                qci.rulesCRC = version['rulesCRC']
-                                qci.metaModelCRC = version['metaModelCRC']
-                                listQualityRules.append(qci)
-
-
-                                #### mise au point
-                                '''
-                                currentdate = datetime.datetime.today()
-                                # csv file path
-                                mycsvdatas = []
-                                for data in listQualityRules:
-                                    mycsvdatas.append(qci_to_dictitem(logger, data, detailLevel))
-                                csvfilepath = 'CAST_TempQualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
-                                with open(csvfilepath, mode='w', newline='') as csv_file:
-                                    csv_writer = csv.writer(csv_file, delimiter=';')
-                                    csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
-                                    for row in mycsvdatas:
-                                        logger.debug(str(row))
-                                        csv_writer.writerow(row)
-                                '''
-                                #### fin mise au point
-        
+                    versions = get_extensions_versions(logger, connection, extension['name'])
+                    iversion = 0
+                    if versions == None: 
+                        continue
+                    for version in versions:
+                        iversion+=1
+                        # breaking if we keep only the LAST                
+                        if iversion > 1 and versionFilter == 'LAST':
+                            break
+                        
+                        msg = 'Extension ' + extension['name'] + ' ' + version['name'] + '(QM: ' + str(hasQualityModel) + ' TR: '+ str(hasTransactionsConfiguration) +  ') : processing. '
+                        if not hasQualityModel:
+                            msg += '  No quality model, skipping'
+                        '''logger.info(msg)
+                        print(msg)
+                        '''
+                        if hasQualityModel:
+                            json_qrs = get_extensions_versions_qualityrules(logger, connection, extension['name'], version['name'])
+                            if json_qrs != None:
+                                for json_qr in json_qrs: 
+                                    qci = None
+                                    href = None
+                                    try: href = '/' + json_qr['href'] 
+                                    except: None
+                                    if href == None or dictQualityRules.get(href) == None:
+                                        # load the data from the rest API, the first time
+                                        qci = parse_load_jsonqr(logger, connection, json_qr, iversion, detailLevel)
+                                        # append the dict
+                                        dictQualityRules[qci.restHref] = qci
+                                    else:
+                                        # reuse what have been already loaded
+                                        qci = copy.deepcopy(dictQualityRules.get(href))                                    
+                                    qci.parentType = 'Extension'
+                                    qci.parentName = extension['name']
+                                    qci.parentTitle = extensionDetails['title']
+                                    qci.parentVersion = version['name']
+                                    qci.rulesCRC = version['rulesCRC']
+                                    qci.metaModelCRC = version['metaModelCRC']
+                                    listQualityRulesForComponentVersion.append(qci)
+    
+    
+                                    #### mise au point
+                                    '''
+                                    currentdate = datetime.datetime.today()
+                                    # csv file path
+                                    mycsvdatas = []
+                                    for data in listQualityRulesForComponentVersion:
+                                        mycsvdatas.append(qci_to_dictitem(logger, data, detailLevel))
+                                    csvfilepath = 'CAST_TempQualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
+                                    with open(csvfilepath, mode='w', newline='') as csv_file:
+                                        csv_writer = csv.writer(csv_file, delimiter=';')
+                                        csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+                                        for row in mycsvdatas:
+                                            logger.debug(str(row))
+                                            csv_writer.writerow(row)
+                                    '''
+                                    #### fin mise au point
+            
         currentdate = datetime.datetime.today()
         iCounter = 0
         mycsvdatas = []
-        for data in listQualityRules:
+        for data in listQualityRulesForComponentVersion:
             iCounter+=1
             mycsvdatas.append(qci_to_dictitem(logger, data, detailLevel))
         
