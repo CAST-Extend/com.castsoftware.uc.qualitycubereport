@@ -17,8 +17,9 @@ SET CURRENTFOLDER=%~dp0
 :: remove trailing \
 SET CURRENTFOLDER=%CURRENTFOLDER:~0,-1%
 SET OUTPUTFOLDER=%CURRENTFOLDER%
+SET EXTENSIONINSTALLATIONFOLDER=%CURRENTFOLDER%
 
-SET CMD="%PYTHONCMD%" "%~dp0QualityCubeReport.py" -versionFilter LAST -detailLevel Simple -log "%OUTPUTFOLDER%\QualityCubeReport.log"
+SET CMD="%PYTHONCMD%" "%~dp0QualityCubeReport.py" -versionFilter LAST -detailLevel Simple -log "%OUTPUTFOLDER%\QualityCubeReport.log" -extensioninstallationfolder "%EXTENSIONINSTALLATIONFOLDER%"
 ECHO Running %CMD%
 %CMD%
 SET RETURNCODE=%ERRORLEVEL%

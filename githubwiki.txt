@@ -74,6 +74,10 @@ N/A
 - Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API)  
 <a name="rn"></a>
 # Release Notes
+## Version 1.1.5
+fix for some unicode character causing an error
+## Version 1.1.4
+Added the extraction of the severity to be able to identify Top priority rule (severity = 30)  
 ## Version 1.1.3
 The output folder is in the current folder by default  
 ## Version 1.1.2

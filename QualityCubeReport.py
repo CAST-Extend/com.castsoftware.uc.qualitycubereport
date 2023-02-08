@@ -6,12 +6,12 @@ import argparse
 import logging
 import logging.handlers
 import re
-import sys
 import csv
 import traceback
 import datetime
-import os
 import copy
+from utils.utils import LogUtils
+import xml.etree.ElementTree as ET
 
 ########################################################################
 # Class containing all the attributed to be sent to the CSV file
@@ -35,6 +35,7 @@ class QualityCubeItem:
     lastVersion = None
     maxWeight = ''
     maxWeightRecomputed = -1 
+    severity = None
     
     # Rest URI
     restHref = ''
@@ -169,12 +170,12 @@ def log_qci(logger, qci):
     #msg = "Type;Parent name;Parent title;Version;Last version;Quality rule id;Quality rule name;Critical;Technologies;Href;Standards;Business criteria contribution;Technical criteria contribution;Rest Href"
     
     #Href
-    msg = qci.parentType + ";" + qci.parentName + ";"+ qci.parentTitle + ";" + qci.parentVersion + ";" + str(qci.lastVersion) + ";" + str(qci.metricId) + ";" + qci.metricName + ";" + str(qci.critical) + ";" + ";" + str(qci.maxWeight) + ";"
+    msg = qci.parentType + ";" + qci.parentName + ";"+ qci.parentTitle + ";" + qci.parentVersion + ";" + str(qci.lastVersion) + ";" + str(qci.metricId) + ";" + qci.metricName + ";" + str(qci.critical) + ";" + str(qci.severity)+ ";" + ";" + str(qci.maxWeight) + ";"
 
     # List of technologies
     listtec = ''
     for tec in qci.listTechnologies:
-        listtec += tec + '/'
+        listtec += tec + '#'
     if listtec != '': listtec = listtec[:-1]
     msg += listtec + ';'  
     
@@ -251,11 +252,11 @@ def qci_to_dictitem(logger, qci, detailLevel):
     if listparam != '': listparam = listparam[:-1]
 
     if detailLevel == 'Full': 
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.rulesCRC), str(qci.metaModelCRC), str(qci.metricId), qci.metricName,  str(qci.critical), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, str(qci.threshold1), str(qci.threshold2), str(qci.threshold3),str(qci.threshold4),listparam,qci.get_full_restHref(),qci.alternativeName,        qci.description , qci.rationale,     qci.remediation,qci.associatedValueName,qci.output,qci.total]
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.rulesCRC), str(qci.metaModelCRC), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, str(qci.threshold1), str(qci.threshold2), str(qci.threshold3),str(qci.threshold4),listparam,qci.get_full_restHref(),qci.alternativeName,        qci.description , qci.rationale,     qci.remediation,qci.associatedValueName,qci.output,qci.total]
     elif detailLevel == 'Intermediate':        
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
     elif detailLevel == 'Simple':
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical), qci.status, listtec, href]
+        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.status, listtec, href]
 
 ########################################################################
 def get_platform_versions(logger, connection):
@@ -297,6 +298,7 @@ def init_parse_argument():
     requiredNamed.add_argument('-versionFilter', required=False, dest='versionFilter', help='Platform and extension versions to selection (LAST|ALL')
     requiredNamed.add_argument('-detailLevel', required=False, dest='detailLevel', help='Level of detail (Simple/Intermediate/Full)')
     requiredNamed.add_argument('-log', required=True, dest='log', help='log file')
+    requiredNamed.add_argument('-extensioninstallationfolder', required=False, dest='extensioninstallationfolder', help='extension installation folder')
     
     return parser
 
@@ -321,6 +323,8 @@ def remove_unicode_characters(astr):
     mystr = mystr.replace('\x94','')
     mystr = mystr.replace('\u200b','')
     mystr = mystr.replace('\x96','')
+    mystr = mystr.replace('\u2026','')
+    mystr = mystr.replace('\u2192','')
     return mystr
 
 ########################################################################
@@ -350,6 +354,10 @@ def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel):
         #x.metricName = 'Avoid Main Procedures having "SELECT * FROM ..." clause (PL1)'
     
     x.critical = json_qr['critical']
+    try:
+        x.severity = json_qr['severity']
+    except KeyError:
+        logger.info('No severity for quality rule %s %s' % (str(x.metricId), str(x.metricName)))
     x.status = json_qr['status']
 
     x.type = 'quality-rules'
@@ -483,6 +491,12 @@ if __name__ == '__main__':
     detailLevel = 'Intermediate'
     if args.detailLevel != None and (args.detailLevel == 'Simple' or args.detailLevel == 'Intermediate' or args.detailLevel == 'Full'):
         detailLevel = args.detailLevel
+    extensioninstallationfolder = "."
+    if args.extensioninstallationfolder != None:
+        extensioninstallationfolder = args.extensioninstallationfolder
+    # add trailing / if not exist 
+    if extensioninstallationfolder[-1:] != '/' and extensioninstallationfolder[-1:] != '\\' :
+        extensioninstallationfolder += '\\'   
 
     # setup logging
     logger = logging.getLogger(__name__)
@@ -492,11 +506,27 @@ if __name__ == '__main__':
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
+    # Version
+    script_version = 'Not extracted'
+    try:
+        pluginfile = extensioninstallationfolder + 'plugin.nuspec'
+        LogUtils.loginfo(logger,pluginfile,True)
+        tree = ET.parse(pluginfile)
+        root = tree.getroot()
+        namespace = "{http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd}"
+        for versiontag in root.findall('{0}metadata/{0}version'.format(namespace)):
+            script_version = versiontag.text
+    except:
+        None
+
     # log params
     logger.info('****************** params ******************')
-    logger.info('log='+log)
-    logger.info('versionFilter='+versionFilter)
-    logger.info('detailLevel ='+detailLevel)
+    LogUtils.loginfo(logger,'script_version='+script_version,True)
+    LogUtils.loginfo(logger,'log file='+log,True)
+    LogUtils.loginfo(logger,'versionFilter='+str(versionFilter),True)
+    LogUtils.loginfo(logger,'detailLevel='+str(detailLevel),True)
+    LogUtils.loginfo(logger,"extensioninstallationfolder="+extensioninstallationfolder)
+    
     logger.info('********************************************')
 
     try:
@@ -624,7 +654,7 @@ if __name__ == '__main__':
                                     csvfilepath = 'CAST_TempQualityRules_' + versionFilter + '_' + detailLevel + "_" + get_formatted_dateandtime(currentdate) + '.csv'
                                     with open(csvfilepath, mode='w', newline='') as csv_file:
                                         csv_writer = csv.writer(csv_file, delimiter=';')
-                                        csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+                                        csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
                                         for row in mycsvdatas:
                                             logger.debug(str(row))
                                             csv_writer.writerow(row)
@@ -644,11 +674,11 @@ if __name__ == '__main__':
             csv_writer = csv.writer(csv_file, delimiter=';')
             # write in csv file
             if detailLevel == 'Full':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
             elif detailLevel == 'Intermediate':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
             elif detailLevel == 'Simple':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Status','Technologies','Href'])
+                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','Status','Technologies','Href'])
 
             for row in mycsvdatas:
                 # mise au point
@@ -658,13 +688,9 @@ if __name__ == '__main__':
         logger.info(msg)
         print(msg)  
         
-        
-        #os.system("start "+csvfilepath)
-         
            
     except: # catch *all* exceptions
         tb = traceback.format_exc()
-        #e = sys.exc_info()[0]
         logging.error('  Error during the processing %s' % tb)
 
 

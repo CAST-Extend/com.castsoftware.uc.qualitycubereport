@@ -3,9 +3,6 @@
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
     
-    <!-- package version, should be the same as attribute VERSION located in java class QualityCubeReport -->
-	<property file = "version.properties"/>
-	
 	<property name="extension.name" value="com.castsoftware.uc.qualitycubereport" />
 	
 	<!-- Output directory where the package will generate the binary package -->  
@@ -20,7 +17,6 @@
 		<exec executable="cmd">
 		    <arg value="/c"/>
 		    <arg value="nugget_package.bat"/>
-			<arg value="${version}"/>
 		</exec>
 
     </target>
