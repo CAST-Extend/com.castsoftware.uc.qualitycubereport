@@ -76,8 +76,9 @@ N/A
 # Release Notes
 ## Version 1.2.0
 Upgrade to support the technologies.castsoftware.com API V2.  
-Add an aipkey parameter using the Extend apikey to be able to extract the quality rule details, same as technologies.castsoftware.com GUI.
-Improved progress tracking in the logs.     
+Add an aipkey parameter using the Extend apikey to be able to extract the quality rule details, same as technologies.castsoftware.com GUI.  
+Improved progress tracking in the logs.  
+fix for some unicode character causing an error.       
 ## Version 1.1.6
 Fix a packaging issue
 ## Version 1.1.5
