@@ -123,17 +123,23 @@ def get_connection(logger,host,protocol):
 ########################################################################
 # execute Rest API request 
 
-def execute_request(logger, connection, request):
-    #we need to base 64 encode it 
-    #and then decode it to acsii as python 3 stores it as a byte string
-    #userAndPass = b64encode(user_password).decode("ascii")
-    auth = str.encode("%s:%s" % (None, None))
-    #user_and_pass = b64encode(auth).decode("ascii")
-    user_and_pass = b64encode(auth).decode("iso-8859-1")
-    headers = { 'Authorization' : 'Basic %s' %  user_and_pass , "accept" : "application/json"}
-
-    request_text = "/rest" + request
-    logger.debug('Sending request ' + request_text )   
+def execute_request(logger, connection, request, apikey=None):
+    
+    headers = {"accept" : "application/json"}
+    if not apikey:
+        #we need to base 64 encode it 
+        #and then decode it to acsii as python 3 stores it as a byte string
+        #userAndPass = b64encode(user_password).decode("ascii")
+        auth = str.encode("%s:%s" % (None, None))
+        #user_and_pass = b64encode(auth).decode("ascii")
+        user_and_pass = b64encode(auth).decode("iso-8859-1")
+        headers.update( { 'Authorization' : 'Basic %s' %  user_and_pass})
+    else:
+        # if the Extend API is provided
+        headers.update({'X-Nuget-Apikey':apikey})
+    
+    request_text = "/api" + request
+    logger.debug('Sending request ' + request_text)   
 
     connection.request('GET', request_text, headers=headers)
     #get the response back
@@ -144,7 +150,7 @@ def execute_request(logger, connection, request):
     # Status not 200
     if  response.status != 200:
         ResponseStatusSuccess = False
-        msg = 'HTTPS request failed ' + str(response.status) + ' ' + str(response.reason)
+        msg = '### HTTPS request failed ' + str(response.status) + ' ' + str(response.reason)
         print (msg)
         logger.warning(msg)
     
@@ -157,9 +163,9 @@ def execute_request(logger, connection, request):
         return None
     
     #print (responseread_decoded) 
-    output_json_snapshots_loc = json.loads(responseread_decoded)
+    output_json = json.loads(responseread_decoded)
     
-    return output_json_snapshots_loc
+    return output_json
 
 
 ########################################################################
@@ -252,41 +258,42 @@ def qci_to_dictitem(logger, qci, detailLevel):
     if listparam != '': listparam = listparam[:-1]
 
     if detailLevel == 'Full': 
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.rulesCRC), str(qci.metaModelCRC), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, str(qci.threshold1), str(qci.threshold2), str(qci.threshold3),str(qci.threshold4),listparam,qci.get_full_restHref(),qci.alternativeName,        qci.description , qci.rationale,     qci.remediation,qci.associatedValueName,qci.output,qci.total]
+        return [qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.rulesCRC), str(qci.metaModelCRC), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, str(qci.threshold1), str(qci.threshold2), str(qci.threshold3),str(qci.threshold4),listparam,qci.get_full_restHref(),qci.alternativeName,        qci.description , qci.rationale,     qci.remediation,qci.associatedValueName,qci.output,qci.total]
     elif detailLevel == 'Intermediate':        
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
+        return [qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.maxWeight, qci.status, listtec, href, listqs, listbc, listtc, qci.get_full_restHref()]
     elif detailLevel == 'Simple':
-        return [qci.parentType, qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.status, listtec, href]
+        return [qci.parentName,  qci.parentTitle,  qci.parentVersion, str(qci.lastVersion), str(qci.metricId), qci.metricName,  str(qci.critical),  str(qci.severity), qci.status, listtec, href]
 
 ########################################################################
+""" deprecated
 def get_platform_versions(logger, connection):
-    request = "/AIP/versions"
+    request = "/aip/versions"
     return execute_request(logger, connection, request)
 
 ########################################################################
 def get_platform_version_qualityrules(logger, connection, platformversion):
-    request = "/AIP/versions/" + platformversion + "/quality-rules"
+    request = "/aip/versions/" + platformversion + "/quality-rules"
     return execute_request(logger, connection, request)
-
+"""
 ########################################################################
 def get_extensions(logger, connection):
-    request = "/AIP/extensions"
+    request = "/aip/extensions"
     return execute_request(logger, connection, request)
 
 ########################################################################
 def get_extensions_versions(logger, connection, extension):
-    request = "/AIP/extensions/" + extension + '/versions'
+    request = "/aip/extensions/" + extension
     return execute_request(logger, connection, request)
 
 ########################################################################
 def get_extensions_versions_qualityrules(logger, connection, extension, version):
-    request = "/AIP/extensions/" + extension + '/versions/'+ version + '/quality-rules'
+    request = "/aip/extensions/" + extension + '/versions/'+ version
     return execute_request(logger, connection, request)
 
 ########################################################################
-def get_extension_details(logger, connection, extension_id):
-    request = "/AIP/extensions/" + extension_id
-    return execute_request(logger, connection, request)
+def get_extension_details(logger, connection, extension_id, apikey=None):
+    request = "/aip/extensions/" + extension_id
+    return execute_request(logger, connection, request,apikey)
 
 ########################################################################
 # intialize the command line arguments
@@ -298,7 +305,10 @@ def init_parse_argument():
     requiredNamed.add_argument('-versionFilter', required=False, dest='versionFilter', help='Platform and extension versions to selection (LAST|ALL')
     requiredNamed.add_argument('-detailLevel', required=False, dest='detailLevel', help='Level of detail (Simple/Intermediate/Full)')
     requiredNamed.add_argument('-log', required=True, dest='log', help='log file')
+    requiredNamed.add_argument('-apikey', required=True, dest='apikey', help='Extend apikey')
     requiredNamed.add_argument('-extensioninstallationfolder', required=False, dest='extensioninstallationfolder', help='extension installation folder')
+    requiredNamed.add_argument('-extensionNameFilter', required=False, dest='extensionNameFilter', help='Extension name Filter')
+
     
     return parser
 
@@ -325,12 +335,14 @@ def remove_unicode_characters(astr):
     mystr = mystr.replace('\x96','')
     mystr = mystr.replace('\u2026','')
     mystr = mystr.replace('\u2192','')
+    mystr = mystr.replace('\u2705','')
+    mystr = mystr.replace('\u221a','')
     return mystr
 
 ########################################################################
 # parse the quality rule json
 
-def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel):
+def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel, apikey=None):
     x = QualityCubeItem()
     x.listBusinessCriteria = []
     x.listParameters = []
@@ -349,7 +361,7 @@ def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel):
     # temporary dirty workaround to avoid the below error
     # QualityCubeReport.py", line 452, in <module>
     # UnicodeEncodeError: 'charmap' codec can't encode character '\x85' in position 105: character maps to <undefined>    
-    if x.metricId == 1001136:
+    if x.metricId in [1001136, 1008078]:
         x.metricName = remove_unicode_characters(json_qr['name'])
         #x.metricName = 'Avoid Main Procedures having "SELECT * FROM ..." clause (PL1)'
     
@@ -366,84 +378,88 @@ def parse_load_jsonqr(logger, connection, json_qr, index, detailLevel):
     if index == 1:
         x.lastVersion = True
     
-    # list of technologies
-    for tech in json_qr['technologyNames']:
-        x.add_technology(tech)
+    try:
+        # list of technologies
+        for tech in json_qr['technologyNames']:
+            x.add_technology(tech)
+    except KeyError:
+        None
     
     # we look at the quality rules details only if we detail Level is not Simple but Intermediate or Full, because it's very time consuming
     # we do that only for the last version, because we don't have history for those data, it's available only in the last version 
     if (detailLevel == 'Intermediate' or detailLevel == 'Full') and x.lastVersion and x.restHref != None and x.restHref != '':
-        json_qrdetail = execute_request(logger, connection,  x.restHref)
-        try:
-            x.maxWeight = str(json_qrdetail['maxWeight'])
-        except KeyError:
-            x.maxWeight = ''
-        
-        for bc in json_qrdetail['businessCriteria']:
-            x.add_businesscriterion(bc['name'])
-        for tc in json_qrdetail['technicalCriteria']:
-            x.add_technicalcriterion(tc['name']+'#'+str(tc['critical'])+'#'+str(tc['weight']))
-            if tc['weight'] > x.maxWeightRecomputed: 
-                x.maxWeightRecomputed = tc['weight']
-                # Fix in the rest API data, maxWeight is not always filled where it should
-                if x.maxWeight == '': x.maxWeight = x.maxWeightRecomputed
+        json_qrdetail = execute_request(logger, connection,  x.restHref, apikey)
+        if json_qrdetail:
+            try:
+                x.maxWeight = str(json_qrdetail['maxWeight'])
+            except KeyError:
+                x.maxWeight = ''
             
-        for qs in json_qrdetail['qualityStandards']:
-            x.add_qualitystandard(qs['standard'] + ":" + qs['id'])       
-    
-        if detailLevel == 'Full':
-            # parameters
-            for param in json_qrdetail['parameters']:
-                x.add_parameter(param['name'])          
-    
-            # thresholds
-            ithres = 0
-            for trsh in json_qrdetail['thresholds']:
-                ithres += 1
-                if ithres == 1:
-                    x.threshold1 = trsh
-                elif ithres == 2:
-                    x.threshold2 = trsh
-                elif ithres == 3:
-                    x.threshold3 = trsh
-                elif ithres == 4:
-                    x.threshold4 = trsh       
-    
-            # rule documentation
-            try:
-                x.alternativeName = json_qrdetail['alternativeName']
-            except KeyError:
-                x.alternativeName = ''
-            try:
-                x.associatedValueName = json_qrdetail['associatedValueName']
-            except KeyError:
-                x.associatedValueName = ''
-            try:
-                x.description = remove_unicode_characters(json_qrdetail['description'])
-            except UnicodeEncodeError:
-                x.description = 'UnicodeEncodeError'
-            except KeyError:
-                x.description = ''
-            try:
-                x.output = json_qrdetail['output']
-            except KeyError:
-                x.output = ''
-            try:            
-                x.rationale = remove_unicode_characters(json_qrdetail['rationale'])
-            except UnicodeEncodeError:
-                x.rationale = 'UnicodeEncodeError'
-            except KeyError:
-                x.rationale = ''
-            try:            
-                x.remediation = remove_unicode_characters(json_qrdetail['remediation'])
-            except UnicodeEncodeError:
-                x.remediation = 'UnicodeEncodeError'
-            except KeyError:
-                x.remediation = ''
-            try:            
-                x.total = json_qrdetail['total']
-            except KeyError:
-                x.total = ''
+            for bc in json_qrdetail['businessCriteria']:
+                x.add_businesscriterion(bc['name'])
+            for tc in json_qrdetail['technicalCriteria']:
+                x.add_technicalcriterion(tc['name']+'#'+str(tc['critical'])+'#'+str(tc['weight']))
+                if tc['weight'] > x.maxWeightRecomputed: 
+                    x.maxWeightRecomputed = tc['weight']
+                    # Fix in the rest API data, maxWeight is not always filled where it should
+                    if x.maxWeight == '': x.maxWeight = x.maxWeightRecomputed
+                
+            for qs in json_qrdetail['qualityStandards']:
+                x.add_qualitystandard(qs['standard'] + ":" + qs['id'])       
+        
+            if detailLevel == 'Full':
+                # parameters
+                for param in json_qrdetail['parameters']:
+                    x.add_parameter(param['name'])          
+        
+                # thresholds
+                ithres = 0
+                for trsh in json_qrdetail['thresholds']:
+                    ithres += 1
+                    if ithres == 1:
+                        x.threshold1 = trsh
+                    elif ithres == 2:
+                        x.threshold2 = trsh
+                    elif ithres == 3:
+                        x.threshold3 = trsh
+                    elif ithres == 4:
+                        x.threshold4 = trsh       
+        
+                # rule documentation
+                try:
+                    x.alternativeName = json_qrdetail['alternativeName']
+                except KeyError:
+                    x.alternativeName = ''
+                try:
+                    x.associatedValueName = json_qrdetail['associatedValueName']
+                except KeyError:
+                    x.associatedValueName = ''
+                try:
+                    x.description = remove_unicode_characters(json_qrdetail['description'])
+                except UnicodeEncodeError:
+                    x.description = 'UnicodeEncodeError'
+                except KeyError:
+                    x.description = ''
+                try:
+                    x.output = json_qrdetail['output']
+                except KeyError:
+                    x.output = ''
+                try:            
+                    x.rationale = remove_unicode_characters(json_qrdetail['rationale'])
+                except UnicodeEncodeError:
+                    x.rationale = 'UnicodeEncodeError'
+                except KeyError:
+                    x.rationale = ''
+                try:            
+                    x.remediation = remove_unicode_characters(json_qrdetail['remediation'])
+                except UnicodeEncodeError:
+                    x.remediation = 'UnicodeEncodeError'
+                except KeyError:
+                    x.remediation = ''
+                try:            
+                    x.total = json_qrdetail['total']
+                except KeyError:
+                    x.total = ''
     return x
 
 ######################################################################################################################
@@ -489,6 +505,13 @@ if __name__ == '__main__':
     if versionFilter != 'LAST' and versionFilter != 'ALL':
         versionFilter = 'LAST'
     detailLevel = 'Intermediate'
+    
+    apikey=None
+    if args.apikey: 
+        apikey = args.apikey
+    
+    extensionNameFilter=args.extensionNameFilter
+    
     if args.detailLevel != None and (args.detailLevel == 'Simple' or args.detailLevel == 'Intermediate' or args.detailLevel == 'Full'):
         detailLevel = args.detailLevel
     extensioninstallationfolder = "."
@@ -535,62 +558,32 @@ if __name__ == '__main__':
 
         # initialize connection
         connection = get_connection(logger, 'technologies.castsoftware.com', 'https')    
-        #####################################################
-        # retrieve platform versions & quality rules
-        platform_versions = get_platform_versions(logger, connection)
-        iversion = 0
-        for version in platform_versions:
-            iversion += 1 
-            # mise au point
-            #break
-            # breaking in the second iteration if we keep only the LAST version
-            if iversion > 1 and versionFilter == 'LAST':
-                break
 
-            msg = 'Platform version ' + version['name'] + ': processing'
-            '''logger.info(msg)
-            print(msg)
-            '''
-            json_qrs = get_platform_version_qualityrules(logger, connection, version['name'])
-            if json_qrs != None:
-                icount = 0
-                for json_qr in json_qrs: 
-                    icount+=1
-                    if loadNmax != None and loadNmax and icount > 30:
-                        break 
-                    qci = None
-                    href = None
-                    try: href = '/' + json_qr['href'] 
-                    except: None
-                    if href == None or dictQualityRules.get(href) == None:
-                        # load the data from the rest API, the first time
-                        qci = parse_load_jsonqr(logger, connection, json_qr, iversion, detailLevel)
-                        # append the dict
-                        dictQualityRules[qci.restHref] = qci
-                    else:
-                        # reuse what have been already loaded
-                        qci = copy.deepcopy(dictQualityRules.get(href))
-                    qci.parentType = 'Platform'
-                    qci.parentName = 'Platform'
-                    qci.parentTitle = 'Platform'
-                    qci.parentVersion = version['name']
-                    listQualityRulesForComponentVersion.append(qci)
-                    #log_qci(logger,qci)
-        
         #####################################################    
         # retrieve extensions versions & quality rules
-        extensions = get_extensions(logger, connection)
-        iext = 0
+        raw_extensions = get_extensions(logger, connection)
+        
         #for extension in extensions:
         #    print(extension['name'])
-        if extensions != None:
+        if raw_extensions != None:
+            extensions = raw_extensions['items']
+            iext = 0
             for extension in extensions:
                 iext += 1
                 # pour mise au point
                 #break
                 #if iext > 1:
                 #    break
-                extensionDetails = get_extension_details(logger, connection, extension['name'])
+                extension_name = extension['name']
+                extension_title = extension['title']
+                
+                print("Processing extension {0} {1}/{2}".format(extension_name, str(iext),str(len(extensions))))
+                # for testing purpose we keep only a few extensions
+                if extensionNameFilter and not re.match(extensionNameFilter, extension_name):
+                    print("    Skipping extension, not matching extensionNameFilter pattern %s" % (extensionNameFilter))
+                    continue                
+                
+                extensionDetails = get_extension_details(logger, connection, extension_name, apikey)
                 if extensionDetails == None:
                     msg = 'Extension '  + extension['name'] + ' not found, skipping.'
                     '''logger.warning(msg)
@@ -607,7 +600,7 @@ if __name__ == '__main__':
                     iversion = 0
                     if versions == None: 
                         continue
-                    for version in versions:
+                    for version in versions['items']:
                         iversion+=1
                         # breaking if we keep only the LAST                
                         if iversion > 1 and versionFilter == 'LAST':
@@ -616,20 +609,20 @@ if __name__ == '__main__':
                         msg = 'Extension ' + extension['name'] + ' ' + version['name'] + '(QM: ' + str(hasQualityModel) + ' TR: '+ str(hasTransactionsConfiguration) +  ') : processing. '
                         if not hasQualityModel:
                             msg += '  No quality model, skipping'
-                        '''logger.info(msg)
-                        print(msg)
-                        '''
+                        logger.debug(msg)
+                        #print(msg)
+                        
                         if hasQualityModel:
                             json_qrs = get_extensions_versions_qualityrules(logger, connection, extension['name'], version['name'])
                             if json_qrs != None:
-                                for json_qr in json_qrs: 
+                                for json_qr in json_qrs['qualityRules']: 
                                     qci = None
                                     href = None
                                     try: href = '/' + json_qr['href'] 
                                     except: None
                                     if href == None or dictQualityRules.get(href) == None:
                                         # load the data from the rest API, the first time
-                                        qci = parse_load_jsonqr(logger, connection, json_qr, iversion, detailLevel)
+                                        qci = parse_load_jsonqr(logger, connection, json_qr, iversion, detailLevel, apikey)
                                         # append the dict
                                         dictQualityRules[qci.restHref] = qci
                                     else:
@@ -639,8 +632,18 @@ if __name__ == '__main__':
                                     qci.parentName = extension['name']
                                     qci.parentTitle = extensionDetails['title']
                                     qci.parentVersion = version['name']
-                                    qci.rulesCRC = version['rulesCRC']
-                                    qci.metaModelCRC = version['metaModelCRC']
+                                    if iversion == 1: qci.lastVersion = True                                    
+                                    else: qci.lastVersion = False
+                                    
+                                    
+                                    try:
+                                        qci.rulesCRC = version['rulesCRC']
+                                    except KeyError:
+                                        None
+                                    try:
+                                        qci.metaModelCRC = version['metaModelCRC']
+                                    except KeyError:
+                                        None                                    
                                     listQualityRulesForComponentVersion.append(qci)
     
     
@@ -674,16 +677,23 @@ if __name__ == '__main__':
             csv_writer = csv.writer(csv_file, delimiter=';')
             # write in csv file
             if detailLevel == 'Full':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
+                csv_writer.writerow(['Extension name','Extension title','Version','Last version','Rules CRC','Metamodel CRC','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution (Name#Critical#Weight)','Threshold 1','Threshold 2','Threshold 3','Threshold 4','Parameters','Rest Href','Alternative name','Description', 'Rationale', 'Remediation','Associated value','Output','Total'])
             elif detailLevel == 'Intermediate':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
+                csv_writer.writerow(['Extension name','Extension title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','MaxWeight','Status','Technologies','Href','Standards','Business criteria contribution','Technical criteria contribution','Rest Href'])
             elif detailLevel == 'Simple':
-                csv_writer.writerow(['Type','Parent name','Parent title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','Status','Technologies','Href'])
+                csv_writer.writerow(['Extension name','Extension title','Version','Last version','Quality rule id','Quality rule name','Critical','Severity','Status','Technologies','Href'])
 
             for row in mycsvdatas:
                 # mise au point
                 #logger.debug(str(row))
-                csv_writer.writerow(row)
+                try:
+                    csv_writer.writerow(row)
+                except UnicodeEncodeError as e:
+                    # we continue and skip the line
+                    print(row[0] + "/" + row[6])
+                    logging.error(e, exc_info=True)
+                    
+                    
         msg = 'Completed with success. File ' + csvfilepath + ' generated with ' + str(iCounter) + ' rows'        
         logger.info(msg)
         print(msg)  
@@ -695,4 +705,5 @@ if __name__ == '__main__':
 
 
 ########################################################################
+
 

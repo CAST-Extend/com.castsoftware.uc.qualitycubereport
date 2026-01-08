@@ -71,9 +71,13 @@ N/A
 
 <a name="limitations"></a>
 # Limitations and potential enhancements
-- Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API)  
+- Some data like the business criteria, technical criteria, ... are only available for the last version (limitation coming the Rest API).   
 <a name="rn"></a>
 # Release Notes
+## Version 1.2.0
+Upgrade to support the technologies.castsoftware.com API V2.  
+Add an aipkey parameter using the Extend apikey to be able to extract the quality rule details, same as technologies.castsoftware.com GUI.
+Improved progress tracking in the logs.     
 ## Version 1.1.6
 Fix a packaging issue
 ## Version 1.1.5
